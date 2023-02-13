@@ -32,17 +32,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "tagmap.h"
 #include "branch_pred.h"
 #include "debug.h"
 #include "libdft_api.h"
 #include "pin.H"
+#include <cstdio>
 #include <err.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include "libdft_api.h"
 
+static unsigned int stdin_read_off = 0;
 tag_dir_t tag_dir;
 extern thread_ctx_t *threads_ctx;
 
@@ -143,6 +148,38 @@ void PIN_FAST_ANALYSIS_CALL tagmap_setn(ADDRINT addr, UINT32 n, tag_t const &tag
     tagmap_setb(i, tag);
   }
 }
+
+
+void PIN_FAST_ANALYSIS_CALL tagmap_setd(void *ctx,ADDRINT buf, UINT32 nr)
+{
+
+   const int fd = ((syscall_ctx_t*)ctx)->arg[SYSCALL_ARG0];
+    unsigned int read_off = 0;
+    if (fd == STDIN_FILENO) {
+      // maintain it by ourself
+      read_off = stdin_read_off;
+      stdin_read_off += nr;
+    } else {
+      // low-level POSIX file descriptor I/O.
+      read_off = lseek(fd, 0, SEEK_CUR);
+      read_off -= nr; // post
+    }
+
+    for (unsigned int i = 0; i < nr; i++) {
+      tag_t t = tag_alloc<tag_t>(read_off + i);
+
+      FILE *f;
+      f=fopen("/tmp/libdft-dta.log","a");
+      fprintf(f,"标记为:%d\n",t);
+      fclose(f);
+
+      tagmap_setb(buf + i, t);
+      // LOGD("[read] %d, lb: %d,  %s\n", i, t, tag_sprint(t).c_str());
+    
+  }   
+   
+}
+
 
 tag_t tagmap_getn(ADDRINT addr, unsigned int n) {
   tag_t ts = tag_traits<tag_t>::cleared_val;

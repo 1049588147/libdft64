@@ -36,7 +36,6 @@
 #include "pin.H"
 #include "tag_traits.h"
 #include <utility>
-
 /*
  * the bitmap size in bytes
  */
@@ -87,5 +86,5 @@ tag_t tagmap_getn_reg(THREADID tid, unsigned int reg_idx, unsigned int n);
 void tagmap_clrb(ADDRINT addr);
 void tagmap_clrn(ADDRINT, UINT32);
 void tagmap_setn(ADDRINT addr, UINT32 n, tag_t const &tag);
-
+void tagmap_setd(void *ctx, ADDRINT buf, UINT32 nr);
 #endif /* __TAGMAP_H__ */
