@@ -1,0 +1,38 @@
+--- a/tools/libdft-dta.cpp
++++ b/tools/libdft-dta.cpp
+@@ -51,6 +51,7 @@
+ #include "libdft_core.h"
+ #include "syscall_desc.h"
+ #include "tagmap.h"
++#include "ins_helper.h"
+ 
+ #define WORD_LEN	4	/* size in bytes of a word value */
+ #define SYS_SOCKET	1	/* socket(2) demux index for socketcall */
+@@ -64,7 +65,8 @@
+ 
+ 
+ /* thread context */
+-extern REG thread_ctx_ptr;
++// extern REG thread_ctx_ptr;
++extern thread_ctx_t *threads_ctx;
+ 
+ /* ins descriptors */
+ extern ins_desc_t ins_desc[XED_ICLASS_LAST];
+@@ -258,7 +260,7 @@ dta_instrument_jmp_call(INS ins)
+ 					IPOINT_BEFORE,
+ 					(AFUNPTR)assert_reg32,
+ 					IARG_FAST_ANALYSIS_CALL,
+-					IARG_REG_VALUE, thread_ctx_ptr,
++					IARG_PTR, threads_ctx,
+ 					IARG_UINT32, REG_INDX(reg),
+ 					IARG_REG_VALUE, reg,
+ 					IARG_END);
+@@ -272,7 +274,7 @@ dta_instrument_jmp_call(INS ins)
+ 					IPOINT_BEFORE,
+ 					(AFUNPTR)assert_reg16,
+ 					IARG_FAST_ANALYSIS_CALL,
+-					IARG_REG_VALUE, thread_ctx_ptr,
++					IARG_PTR, threads_ctx,
+ 					IARG_UINT32, REG_INDX(reg),
+ 					IARG_REG_VALUE, reg,
+ 					IARG_END);

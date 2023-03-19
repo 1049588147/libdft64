@@ -53,6 +53,11 @@
 #include "tagmap.h"
 #include "ins_helper.h"
 
+#include "debug.h"
+#include "pin.H"
+#include "syscall_hook.h"
+#include <iostream>
+
 #define WORD_LEN	4	/* size in bytes of a word value */
 #define SYS_SOCKET	1	/* socket(2) demux index for socketcall */
 
@@ -388,7 +393,7 @@ static void
 post_read_hook(THREADID tid, syscall_ctx_t *ctx)
 {
 //测试
-tagmap_setd(ctx,ctx->arg[SYSCALL_ARG1], (size_t)ctx->ret);	
+//tagmap_setd(ctx,ctx->arg[SYSCALL_ARG1], (size_t)ctx->ret);	
         /* read() was not successful; optimized branch */
         if (unlikely((long)ctx->ret <= 0))
                 return;
@@ -738,6 +743,26 @@ post_open_hook(THREADID tid, syscall_ctx_t *ctx)
 		fdset.insert((int)ctx->ret);
 }
 
+VOID TestGetHandler(void *p) {
+  uint64_t v = *((uint64_t *)p);
+  tag_t t = tagmap_getn((ADDRINT)p, 8);
+  printf("[PIN][GET] addr: %p, v: %lu, lb: %d, taint: %s\n", p, v, t,
+         tag_sprint(t).c_str());
+}
+
+VOID EntryPoint(VOID *v) {
+  printf("EntryPoint success!");
+  for (IMG img = APP_ImgHead(); IMG_Valid(img); img = IMG_Next(img)) {
+    RTN test_get_rtn = RTN_FindByName(img, "libdft_get_taint");
+    if (RTN_Valid(test_get_rtn)) {
+      RTN_Open(test_get_rtn);
+      RTN_InsertCall(test_get_rtn, IPOINT_BEFORE, (AFUNPTR)TestGetHandler,
+                     IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
+      RTN_Close(test_get_rtn);
+    }
+  }
+}
+
 /* 
  * DTA
  *
@@ -760,7 +785,8 @@ main(int argc, char **argv)
 	if (unlikely(libdft_init() != 0))
 		/* failed */
 		goto err;
-	
+		
+
 	/* 
 	 * handle control transfer instructions
 	 *
@@ -826,6 +852,10 @@ main(int argc, char **argv)
 	/* add stdin to the interesting descriptors set */
 	if (stdin_.Value() != 0)
 		fdset.insert(STDIN_FILENO);
+
+
+	PIN_AddApplicationStartFunction(EntryPoint, 0);
+  
 
 	/* start Pin */
 	PIN_StartProgram();
