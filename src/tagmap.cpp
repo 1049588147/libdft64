@@ -97,15 +97,23 @@ inline void tag_dir_setb(tag_dir_t &dir, ADDRINT addr, tag_t const &tag) {
 }
 
 inline tag_t const *tag_dir_getb_as_ptr(tag_dir_t const &dir, ADDRINT addr) {
+ 
   if (addr > 0x7fffffffffff) {
+  printf("addr > 0x7fffffffffff");
+  fflush(stdout); 
     return NULL;
   }
   if (dir.table[VIRT2PAGETABLE(addr)]) {
+      
     tag_table_t *table = dir.table[VIRT2PAGETABLE(addr)];
     if ((*table).page[VIRT2PAGE(addr)]) {
+      
       tag_page_t *page = (*table).page[VIRT2PAGE(addr)];
-      if (page != NULL)
-        return &(*page).tag[VIRT2OFFSET(addr)];
+      if (page != NULL){
+          
+      return &(*page).tag[VIRT2OFFSET(addr)];
+      }
+        
     }
   }
   return &tag_traits<tag_t>::cleared_val;
@@ -183,10 +191,18 @@ void PIN_FAST_ANALYSIS_CALL tagmap_setd(void *ctx,ADDRINT buf, UINT32 nr)
 
 tag_t tagmap_getn(ADDRINT addr, unsigned int n) {
   tag_t ts = tag_traits<tag_t>::cleared_val;
+
   for (size_t i = 0; i < n; i++) {
     const tag_t t = tagmap_getb(addr + i);
-    if (tag_is_empty(t))
-      continue;
+    if (tag_is_empty(t)){
+      printf("tagmap_getb(addr + i) is empty!");
+  fflush(stdout); 
+  continue;
+    }
+    else{
+      printf(" tagmap_getb_taint: %s\n", tag_sprint(t).c_str());
+  fflush(stdout);
+    } 
     // LOGD("[tagmap_getn] %lu, ts: %d, %s\n", i, ts, tag_sprint(t).c_str());
     ts = tag_combine(ts, t);
     // LOGD("t: %d, ts:%d\n", t, ts);

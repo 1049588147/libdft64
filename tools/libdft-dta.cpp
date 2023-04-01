@@ -400,12 +400,22 @@ post_read_hook(THREADID tid, syscall_ctx_t *ctx)
 	
 	/* taint-source */
 	if (fdset.find(ctx->arg[SYSCALL_ARG0]) != fdset.end())
-        	/* set the tag markings */
+	{
+		printf("post_read_hook success!post_read_hook success!post_read_hook success!\n");
+       fflush(stdout);
+	   /* set the tag markings */
 	        /* tagmap_setn(ctx->arg[SYSCALL_ARG1], (size_t)ctx->ret, dta_tag); */
 	        tagmap_setd(ctx,ctx->arg[SYSCALL_ARG1], (size_t)ctx->ret);	
-	else
-        	/* clear the tag markings */
+	}
+        	
+	else{
+		printf("post_read_hook fail!post_read_hook fail!post_read_hook fail!\n");
+       fflush(stdout);
+		/* clear the tag markings */
 	        tagmap_clrn(ctx->arg[SYSCALL_ARG1], (size_t)ctx->ret);
+
+	}
+        	
 }
 
 /*
@@ -414,6 +424,8 @@ post_read_hook(THREADID tid, syscall_ctx_t *ctx)
 static void
 post_readv_hook(THREADID tid, syscall_ctx_t *ctx)
 {
+	printf("readv readv readv readv readv readv readv readv\n");
+            fflush(stdout);
 	/* iterators */
 	int i;
 	struct iovec *iov;
@@ -444,13 +456,22 @@ post_readv_hook(THREADID tid, syscall_ctx_t *ctx)
 	
 		/* taint interesting data and zero everything else */
 
-		if (it != fdset.end())
-                	/* set the tag markings */
+		if (it != fdset.end()){
+			printf("post_readv_hook success!post_readv_hook success!post_read_hook success!\n");
+            fflush(stdout);
+
+			/* set the tag markings */
                 	/* tagmap_setn((size_t)iov->iov_base, iov_tot, dta_tag); */
 					tagmap_setd(ctx,(size_t)iov->iov_base, iov_tot);
-		else
-                	/* clear the tag markings */
+		}
+                	
+		else{
+			printf("post_readv_hook fail!post_readv_hook fail!post_readv_hook fail!\n");
+           fflush(stdout);
+	   /* clear the tag markings */
                 	tagmap_clrn((size_t)iov->iov_base, iov_tot);
+		}
+                	
 
                 /* housekeeping */
                 tot -= iov_tot;
@@ -744,23 +765,36 @@ post_open_hook(THREADID tid, syscall_ctx_t *ctx)
 }
 
 VOID TestGetHandler(void *p) {
+  printf("TestGetHandler success!");
+  fflush(stdout);
   uint64_t v = *((uint64_t *)p);
   tag_t t = tagmap_getn((ADDRINT)p, 8);
   printf("[PIN][GET] addr: %p, v: %lu, lb: %d, taint: %s\n", p, v, t,
          tag_sprint(t).c_str());
+  fflush(stdout);
+ 
+  
 }
 
-VOID EntryPoint(VOID *v) {
+VOID EntryPoint(IMG img,VOID *v) {
   printf("EntryPoint success!");
-  for (IMG img = APP_ImgHead(); IMG_Valid(img); img = IMG_Next(img)) {
-    RTN test_get_rtn = RTN_FindByName(img, "libdft_get_taint");
+  fflush(stdout);
+
+  //for (IMG img = APP_ImgHead(); IMG_Valid(img); img = IMG_Next(img)) {
+	//printf("测试一下：%s\n", IMG_Name(img).c_str());
+   // fflush(stdout);	
+	// printf("loop success!");
+  	//	fflush(stdout);
+    RTN test_get_rtn = RTN_FindByName(img, "__libdft_get_taint5");
     if (RTN_Valid(test_get_rtn)) {
+		 printf("rtn success!rtn success!rtn success!rtn success!rtn success!rtn success!");
+  		fflush(stdout);
       RTN_Open(test_get_rtn);
       RTN_InsertCall(test_get_rtn, IPOINT_BEFORE, (AFUNPTR)TestGetHandler,
                      IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
       RTN_Close(test_get_rtn);
     }
-  }
+ // }
 }
 
 /* 
@@ -854,7 +888,8 @@ main(int argc, char **argv)
 		fdset.insert(STDIN_FILENO);
 
 
-	PIN_AddApplicationStartFunction(EntryPoint, 0);
+	//PIN_AddApplicationStartFunction(EntryPoint, 0);
+	IMG_AddInstrumentFunction(EntryPoint,0);
   
 
 	/* start Pin */
